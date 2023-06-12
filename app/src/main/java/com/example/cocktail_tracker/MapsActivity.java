@@ -1,5 +1,6 @@
 package com.example.cocktail_tracker;
 
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentActivity;
 
 import android.os.Bundle;
@@ -20,9 +21,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_maps);
 
-        binding = ActivityMapsBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+//        binding = ActivityMapsBinding.inflate(getLayoutInflater());
+//        setContentView(binding.getRoot());
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -44,8 +46,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
 
         // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        LatLng ugWZR = new LatLng(54.442731, 18.555837);
+//        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        mMap.addMarker(new MarkerOptions().position(ugWZR).title("Marker in University of Gdansk - WZR"));
+        mMap.moveCamera(CameraUpdateFactory.zoomTo(20));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(ugWZR));
+
     }
+
+
+
+
 }
