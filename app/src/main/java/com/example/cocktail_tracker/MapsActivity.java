@@ -25,9 +25,11 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.IgnoreExtraProperties;
 import com.google.firebase.database.ValueEventListener;
 
 import java.io.IOException;
+import java.net.HttpCookie;
 import java.util.List;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -37,18 +39,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     SearchView searchView;
     private int ACCESS_LOCATION_REQUEST_CODE = 1001;
     FirebaseDatabase firebaseDatabase;
-    DatabaseReference databaseReference;
+    private DatabaseReference mDatabase;
     private MarkerOptions markerOptions;
     private Marker marker;
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        firebaseDatabase = FirebaseDatabase.getInstance();
-        databaseReference = FirebaseDatabase.getInstance().getReference();
 
         setContentView(R.layout.activity_maps);
 
@@ -58,9 +55,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public boolean onQueryTextSubmit(String s) {
                 String location = searchView.getQuery().toString();
+
                 List<Address> addressList = null;
                 if (location != null || !location.equals("")){
                     Geocoder geocoder = new Geocoder(MapsActivity.this);
+
                     try {
                         addressList = geocoder.getFromLocationName(location, 1);
                     }catch (IOException e){
@@ -68,7 +67,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
                     Address address = addressList.get(0);
                     LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
-                    databaseReference = FirebaseDatabase.getInstance().getReference("post");
+
+                    //After getting the location from search bar, add to database
+                    firebaseDatabase = FirebaseDatabase.getInstance();
+                    mDatabase = FirebaseDatabase.getInstance().getReference();
+
+                    Coordinates coordinates = new Coordinates(location,latLng);
+
+                    mDatabase.child("coordinates").setValue(coordinates);
                     mMap.addMarker(new MarkerOptions().position(latLng).title(location));
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10));
                 }
@@ -111,23 +117,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 ActivityCompat.requestPermissions(this, new String[]{ACCESS_FINE_LOCATION}, ACCESS_LOCATION_REQUEST_CODE);
             }
         }
-        databaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                for (DataSnapshot dataSnapshot : snapshot.getChildren()){
-                    Model model = dataSnapshot.getValue(Model.class);
-                    LatLng latLng = new LatLng(model.getLatitude(), model.getLongitude());
-                    markerOptions = new MarkerOptions();
-                    markerOptions.position(latLng).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE));
-                    marker = mMap.addMarker(markerOptions);
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
-        });
 
         // Add a marker in Sydney and move the camera
         LatLng wzr = new LatLng(54.442684, 18.555919);
