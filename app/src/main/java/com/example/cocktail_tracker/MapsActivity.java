@@ -17,9 +17,15 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.example.cocktail_tracker.databinding.ActivityMapsBinding;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.io.IOException;
 import java.util.List;
@@ -30,9 +36,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     SupportMapFragment mapFragment;
     SearchView searchView;
     private int ACCESS_LOCATION_REQUEST_CODE = 1001;
+    FirebaseDatabase firebaseDatabase;
+    DatabaseReference databaseReference;
+    private MarkerOptions markerOptions;
+    private Marker marker;
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        firebaseDatabase = FirebaseDatabase.getInstance();
+        databaseReference = FirebaseDatabase.getInstance().getReference();
+
         setContentView(R.layout.activity_maps);
 
         searchView = findViewById(R.id.sv_location);
@@ -51,6 +68,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
                     Address address = addressList.get(0);
                     LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
+                    databaseReference = FirebaseDatabase.getInstance().getReference("post");
                     mMap.addMarker(new MarkerOptions().position(latLng).title(location));
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10));
                 }
@@ -83,7 +101,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         if (ContextCompat.checkSelfPermission(this,ACCESS_FINE_LOCATION) == getPackageManager().PERMISSION_GRANTED){
-            enableuserlocation();
+            enableUserLocation();
         }
         else {
             if (ActivityCompat.shouldShowRequestPermissionRationale(this, ACCESS_FINE_LOCATION)){
@@ -93,13 +111,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 ActivityCompat.requestPermissions(this, new String[]{ACCESS_FINE_LOCATION}, ACCESS_LOCATION_REQUEST_CODE);
             }
         }
+        databaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                for (DataSnapshot dataSnapshot : snapshot.getChildren()){
+                    Model model = dataSnapshot.getValue(Model.class);
+                    LatLng latLng = new LatLng(model.getLatitude(), model.getLongitude());
+                    markerOptions = new MarkerOptions();
+                    markerOptions.position(latLng).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE));
+                    marker = mMap.addMarker(markerOptions);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
 
         // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        LatLng wzr = new LatLng(54.442684, 18.555919);
+        mMap.addMarker(new MarkerOptions().position(wzr).title("Marker in University of Gdansk - WZR"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(wzr));
     }
-    private void enableuserlocation(){
+    private void enableUserLocation(){
         if (ActivityCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
             return;
         }
@@ -111,7 +146,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == ACCESS_LOCATION_REQUEST_CODE){
             if (grantResults.length > 0 && grantResults[0] == getPackageManager().PERMISSION_GRANTED){
-                enableuserlocation();
+                enableUserLocation();
             }
             else{
 
