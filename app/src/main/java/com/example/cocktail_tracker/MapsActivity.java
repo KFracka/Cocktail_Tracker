@@ -30,7 +30,9 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.io.IOException;
 import java.net.HttpCookie;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -72,9 +74,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     firebaseDatabase = FirebaseDatabase.getInstance();
                     mDatabase = FirebaseDatabase.getInstance().getReference();
 
+                    String key = mDatabase.child("coordinates").push().getKey();
+
                     Coordinates coordinates = new Coordinates(location,latLng);
 
-                    mDatabase.child("coordinates").setValue(coordinates);
+                    Map<String, Object> postValues = coordinates.toMap();
+
+                    Map<String, Object> childUpdates = new HashMap<>();
+                    childUpdates.put("/coordinates/" + key, postValues);
+
+                    mDatabase.updateChildren(childUpdates);
+
+//                    mDatabase.child("coordinates").setValue(coordinates);
                     mMap.addMarker(new MarkerOptions().position(latLng).title(location));
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10));
                 }
