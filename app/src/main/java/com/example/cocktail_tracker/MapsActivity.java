@@ -7,7 +7,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.ColorSpace;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.Bundle;
@@ -30,6 +32,7 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.io.IOException;
 import java.net.HttpCookie;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,11 +45,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private int ACCESS_LOCATION_REQUEST_CODE = 1001;
     FirebaseDatabase firebaseDatabase;
     private DatabaseReference mDatabase;
-    private MarkerOptions markerOptions;
     private Marker marker;
+    public LatLng[] savedMarkers = new LatLng[0];
+    public String[] markersTitles = new String[0];
+
+    SharedPreferences sharedPreferences;
+    int locationCount = 0;
+
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_maps);
@@ -57,6 +65,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public boolean onQueryTextSubmit(String s) {
                 String location = searchView.getQuery().toString();
+
 
                 List<Address> addressList = null;
                 if (location != null || !location.equals("")){
@@ -74,6 +83,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     firebaseDatabase = FirebaseDatabase.getInstance();
                     mDatabase = FirebaseDatabase.getInstance().getReference();
 
+                    sharedPreferences = getSharedPreferences("loc", 0);
+
                     String key = mDatabase.child("coordinates").push().getKey();
 
                     Coordinates coordinates = new Coordinates(location,latLng);
@@ -85,9 +96,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     mDatabase.updateChildren(childUpdates);
 
+                    marker = mMap.addMarker(new MarkerOptions().position(latLng).title(location).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
+                    marker.setTag(0);
+                    for (int i = 0; i < savedMarkers.length; i++){
+                        for (int j = 0; j <markersTitles.length; j++) {
+                            savedMarkers[i] = latLng;
+                            markersTitles[j] = location;
+                        }
+                    }
+
 //                    mDatabase.child("coordinates").setValue(coordinates);
                     mMap.addMarker(new MarkerOptions().position(latLng).title(location));
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10));
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 20));
                 }
                 return false;
             }
@@ -132,7 +152,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Add a marker in Sydney and move the camera
         LatLng wzr = new LatLng(54.442684, 18.555919);
         mMap.addMarker(new MarkerOptions().position(wzr).title("Marker in University of Gdansk - WZR"));
+        for (LatLng savedMarke: savedMarkers
+             ) {
+            for (String markeTitle : markersTitles
+                 ) {
+                mMap.addMarker(new MarkerOptions().position(savedMarke).title("Marker in " + markeTitle).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(savedMarke, 20));
+            }
+        }
         mMap.moveCamera(CameraUpdateFactory.newLatLng(wzr));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(wzr, 20));
+
+
+
     }
     private void enableUserLocation(){
         if (ActivityCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
